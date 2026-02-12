@@ -17,3 +17,20 @@ build/
 .idea/
 *.swp
 *.swo
+
+# Docker
+docker-compose.override.yml
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+tmp/
+
+# macOS
+.DS_Store

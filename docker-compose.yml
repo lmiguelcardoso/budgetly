@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: budgetly-postgres
+    environment:
+      POSTGRES_USER: budgetly
+      POSTGRES_PASSWORD: budgetly123
+      POSTGRES_DB: budgetly
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budgetly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - budgetly-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: budgetly-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - budgetly-network
+
+  # Backend API (Go)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: budgetly-backend
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      GIN_MODE: debug
+      DATABASE_URL: postgres://budgetly:budgetly123@postgres:5432/budgetly?sslmode=disable
+      REDIS_URL: redis:6379
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - budgetly-network
+    restart: unless-stopped
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: budgetly-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8080
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - budgetly-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  budgetly-network:
+    driver: bridge

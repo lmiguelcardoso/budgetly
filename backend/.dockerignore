@@ -1,0 +1,14 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.env
+.env.local
+.git
+.gitignore
+README.md
+tmp/
+vendor/
